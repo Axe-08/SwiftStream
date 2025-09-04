@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project SwiftStream Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .slide {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            min-height: 100vh;
+            width: 100%;
+        }
+        .slide.active {
+            display: flex; /* This now correctly controls the flex display */
+            opacity: 1;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 60vh;
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-gray-200">
+
+    <div id="presentation-container">
+
+        <!-- Slide 1: Title -->
+        <div class="slide active items-center justify-center text-center">
+            <div class="p-8">
+                <h1 class="text-6xl md:text-8xl font-black text-white mb-4">Project <span style="color: #94D2BD;">SwiftStream</span></h1>
+                <p class="text-2xl md:text-3xl text-gray-400">Engineering the Future of Real-Time Speech Recognition</p>
+                <p class="mt-8 text-gray-500">September 4, 2025</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: The Core Challenge -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-6xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-2" style="color: #94D2BD;">The Core Challenge of Conversational AI</h2>
+                <p class="text-xl text-gray-400 mb-8">The fundamental trade-off between latency (speed) and accuracy (quality).</p>
+                <div class="chart-container">
+                    <canvas id="latencyAccuracyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: The Landscape of ASR Architectures -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-4xl w-full">
+                <h2 class="text-4xl font-bold mb-8 text-center" style="color: #94D2BD;">The Landscape of ASR Architectures</h2>
+                <ul class="space-y-4 text-lg">
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">RNN-Transducer:</strong> The classic streaming standard. Good performance but computationally heavy and can struggle with long-range context.
+                        <em class="text-xs block text-gray-500 mt-1">Ref: Graves, 2012</em>
+                    </li>
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">Attention Models (Whisper):</strong> Extremely accurate by using the full audio context, but inherently non-streaming, resulting in high latency.
+                        <em class="text-xs block text-gray-500 mt-1">Ref: Radford et al., 2023</em>
+                    </li>
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">Conformer:</strong> The previous state-of-the-art, blending convolutions and self-attention. Highly accurate but its O(n²) complexity is a bottleneck.
+                        <em class="text-xs block text-gray-500 mt-1">Ref: Gulati et al., 2020</em>
+                    </li>
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">State-Space Models (Mamba):</strong> The new challenger. Linear-time O(n) complexity allows for modeling extremely long sequences efficiently, making it ideal for streaming.
+                        <em class="text-xs block text-gray-500 mt-1">Ref: Gu & Dao, 2023</em>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Slide 4: Architectural Showdown -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-6xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-2" style="color: #94D2BD;">Architectural Showdown: The Data</h2>
+                <p class="text-xl text-gray-400 mb-8">Comparing Word Error Rate (WER) on the LibriSpeech benchmark. Lower is better.</p>
+                <div class="chart-container">
+                    <canvas id="werChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Computational Complexity -->
+        <div class="slide items-center justify-center">
+             <div class="p-8 max-w-4xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-2" style="color: #94D2BD;">Why Mamba Wins for Streaming</h2>
+                <p class="text-xl text-gray-400 mb-8">It's all about Computational Complexity.</p>
+                 <div class="bg-slate-800 p-6 rounded-lg">
+                     <p class="text-lg text-gray-400 mb-6">Transformer/Conformer's O(n²) complexity means processing time explodes as audio length increases. Mamba's linear O(n) complexity is vastly more efficient and scalable.</p>
+                     <div class="space-y-6">
+                        <div>
+                            <p class="font-semibold text-left text-white text-lg mb-2">Transformer / Conformer</p>
+                            <div class="w-full bg-slate-700 rounded-full h-8">
+                                <div class="bg-red-500 h-8 rounded-full text-right pr-3 text-white font-bold flex items-center justify-end" style="width: 95%"><span>O(n²) - Quadratic</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-left text-white text-lg mb-2">Mamba / SSM</p>
+                            <div class="w-full bg-slate-700 rounded-full h-8">
+                                <div class="h-8 rounded-full text-right pr-3 text-white font-bold flex items-center justify-end" style="width: 20%; background-color: #0A9396;"><span>O(n) - Linear</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Two-Phase Strategy -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-5xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-8" style="color: #94D2BD;">Our Two-Phase Strategy</h2>
+                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="flex-1 text-center border-2 border-slate-700 rounded-lg p-6 bg-slate-800 w-full">
+                        <h3 class="text-2xl font-bold" style="color: #EE9B00;">Phase 1: Proof of Concept</h3>
+                        <p class="mt-2 text-gray-300 text-lg">Establish a robust baseline by adapting a non-streaming <span class="font-semibold text-white">`distil-whisper`</span> model for real-time use.</p>
+                        <p class="mt-4 text-sm text-gray-500">Weeks 1-6</p>
+                    </div>
+                    <div class="text-6xl font-black mx-4" style="color: #94D2BD;">→</div>
+                    <div class="flex-1 text-center border-2 border-slate-700 rounded-lg p-6 bg-slate-800 w-full">
+                        <h3 class="text-2xl font-bold" style="color: #0A9396;">Phase 2: Optimal Architecture</h3>
+                        <p class="mt-2 text-gray-300 text-lg">Develop our novel hybrid <span class="font-semibold text-white">ConMamba-Transducer</span> model to outperform the baseline.</p>
+                        <p class="mt-4 text-sm text-gray-500">Weeks 7-10</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Phase 1 Deep Dive -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-4xl w-full">
+                <h2 class="text-4xl font-bold text-center" style="color: #EE9B00;">Phase 1: The Baseline MVP</h2>
+                <p class="text-xl text-gray-400 text-center mb-8">Why adapt a non-streaming model first?</p>
+                 <ul class="space-y-4 text-lg">
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">1. High-Quality Benchmark:</strong> Whisper provides state-of-the-art accuracy, creating a powerful performance target to beat.
+                    </li>
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">2. De-Risk the Project:</strong> We can solve system-level challenges (API, containerization, deployment) without the initial complexity of a custom model.
+                    </li>
+                    <li class="bg-slate-800 p-4 rounded-lg">
+                        <strong class="text-white">3. Justify the Need:</strong> It will provide hard data on the limitations of adapting non-streaming models, powerfully justifying our final architecture.
+                         <em class="text-xs block text-gray-500 mt-1">Methodology based on: Gandhi et al., 2023 (Distil-Whisper)</em>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 8: The Winning Architecture -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-5xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-8" style="color: #0A9396;">The SwiftStream Architecture</h2>
+                <div class="bg-slate-800 p-6 rounded-lg flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                     <div class="text-left flex-1 bg-slate-900 p-4 rounded-lg border-l-4" style="border-color: #EE9B00;">
+                        <h3 class="text-xl font-bold">Encoder: ConMamba</h3>
+                        <p class="text-gray-400 mt-2">Uses <strong class="text-white">Latency-Controlled Bi-Mamba (LC-BiMamba)</strong> blocks to simulate bidirectional context with linear-time efficiency.</p>
+                        <em class="text-xs block text-gray-500 mt-2">Ref: Liu et al., 2024</em>
+                    </div>
+                    <div class="text-2xl font-black" style="color: #94D2BD;">+</div>
+                    <div class="text-left flex-1 bg-slate-900 p-4 rounded-lg border-l-4" style="border-color: #0A9396;">
+                        <h3 class="text-xl font-bold">Decoder: Transformer-Transducer</h3>
+                        <p class="text-gray-400 mt-2">A powerful and proven streaming-compatible decoder that perfectly aligns the encoder's audio features to text.</p>
+                        <em class="text-xs block text-gray-500 mt-2">Ref: Gulati et al., 2020</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Slide 9: 10-Week Roadmap -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-4xl w-full">
+                <h2 class="text-4xl font-bold mb-8 text-center" style="color: #94D2BD;">10-Week Project Roadmap</h2>
+                <div class="relative">
+                    <div class="border-l-4 border-slate-700 absolute h-full top-0 left-4"></div>
+                    <div class="space-y-6">
+                        <div class="pl-12 relative">
+                            <div class="absolute w-8 h-8 rounded-full mt-1.5 -left-4 border-4 border-slate-700" style="background-color: #EE9B00;"></div>
+                            <h3 class="text-xl font-bold">Wks 1-2: Foundation</h3>
+                            <p class="text-gray-400">Environment setup & data processing.</p>
+                        </div>
+                        <div class="pl-12 relative">
+                            <div class="absolute w-8 h-8 rounded-full mt-1.5 -left-4 border-4 border-slate-700" style="background-color: #EE9B00;"></div>
+                            <h3 class="text-xl font-bold">Wks 3-6: Baseline MVP</h3>
+                            <p class="text-gray-400">Implement, deploy, and benchmark the `distil-whisper` POC.</p>
+                        </div>
+                        <div class="pl-12 relative">
+                             <div class="absolute w-8 h-8 rounded-full mt-1.5 -left-4 border-4 border-slate-700" style="background-color: #0A9396;"></div>
+                            <h3 class="text-xl font-bold">Wks 7-8: Advanced Architecture</h3>
+                            <p class="text-gray-400">Implement the ConMamba-Transducer model and begin training.</p>
+                        </div>
+                        <div class="pl-12 relative">
+                             <div class="absolute w-8 h-8 rounded-full mt-1.5 -left-4 border-4 border-slate-700" style="background-color: #0A9396;"></div>
+                            <h3 class="text-xl font-bold">Wks 9-10: Final Deployment</h3>
+                            <p class="text-gray-400">Deploy the final model, run comparative benchmarks, and present results.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: KPIs -->
+        <div class="slide items-center justify-center">
+            <div class="p-8 max-w-4xl w-full text-center">
+                <h2 class="text-4xl font-bold mb-8" style="color: #94D2BD;">Measuring Success: Our Goals</h2>
+                <p class="text-xl text-gray-400 mb-8">Our final model must demonstrate significant, measurable improvements over the baseline MVP.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-slate-800 p-8 rounded-lg">
+                        <p class="text-7xl font-black" style="color: #94D2BD;">15%+</p>
+                        <p class="text-2xl text-gray-300 mt-2">Relative Reduction in Word Error Rate</p>
+                    </div>
+                     <div class="bg-slate-800 p-8 rounded-lg">
+                        <p class="text-7xl font-black" style="color: #94D2BD;">40%+</p>
+                        <p class="text-2xl text-gray-300 mt-2">Reduction in User-Perceived Latency</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Q&A -->
+        <div class="slide items-center justify-center text-center">
+            <div class="p-8">
+                <h2 class="text-6xl font-bold text-white mb-4">Thank You</h2>
+                <p class="text-3xl text-gray-400">Questions?</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm p-4 flex justify-center items-center space-x-4 border-t border-slate-700">
+        <button id="prevBtn" class="px-6 py-2 bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+        <span id="slide-counter" class="text-gray-400">1 / 11</span>
+        <button id="nextBtn" class="px-6 py-2 bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const slideCounter = document.getElementById('slide-counter');
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            currentSlide = index;
+            slideCounter.textContent = `${index + 1} / ${slides.length}`;
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === slides.length - 1;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                showSlide(currentSlide + 1);
+            }
+        });
+        
+        showSlide(0);
+
+        const brilliantBlues = {
+            deepBlue: '#005F73', teal: '#0A9396', mint: '#94D2BD', paleGold: '#E9D8A6',
+            orange: '#EE9B00', burntOrange: '#CA6702', red: '#AE2012'
+        };
+        const textColor = '#E2E8F0';
+        const gridColor = 'rgba(226, 232, 240, 0.2)';
+
+        function processLabels(labels) {
+            const maxLen = 16;
+            return labels.map(label => {
+                if (label.length <= maxLen) return label;
+                const words = label.split(' ');
+                const newLabel = [];
+                let line = '';
+                words.forEach(word => {
+                    if ((line + ' ' + word).trim().length > maxLen) {
+                        newLabel.push(line);
+                        line = word;
+                    } else {
+                        line = (line ? line + ' ' : '') + word;
+                    }
+                });
+                newLabel.push(line);
+                return newLabel;
+            });
+        }
+
+        const tooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            return Array.isArray(label) ? label.join(' ') : label;
+        };
+
+        // Latency vs Accuracy Chart
+        const latencyCtx = document.getElementById('latencyAccuracyChart').getContext('2d');
+        new Chart(latencyCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'RNN-Transducer', data: [{ x: 400, y: 4.2 }], backgroundColor: brilliantBlues.burntOrange, pointRadius: 10 },
+                    { label: 'Whisper (Non-streaming)', data: [{ x: 2500, y: 2.7 }], backgroundColor: brilliantBlues.red, pointRadius: 10 },
+                    { label: 'Conformer', data: [{ x: 800, y: 2.5 }], backgroundColor: brilliantBlues.orange, pointRadius: 10 },
+                    { label: 'Mamba / SwiftStream', data: [{ x: 300, y: 2.9 }], backgroundColor: brilliantBlues.teal, pointRadius: 10 }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Median User Latency (ms)', color: textColor, font: { size: 14 } }, ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { title: { display: true, text: 'Word Error Rate (%)', color: textColor, font: { size: 14 } }, ticks: { color: textColor }, grid: { color: gridColor } }
+                },
+                plugins: {
+                    legend: { labels: { color: textColor, font: { size: 14 } } },
+                    tooltip: { callbacks: { title: (items) => items[0].dataset.label, label: (ctx) => `Latency: ${ctx.parsed.x}ms, WER: ${ctx.parsed.y}%` } }
+                }
+            }
+        });
+
+        // WER Chart
+        const werCtx = document.getElementById('werChart').getContext('2d');
+        const werLabels = ['RNN-Transducer', 'Whisper (Large, Non-streaming)', 'Conformer', 'Mamba-based'];
+        new Chart(werCtx, {
+            type: 'bar',
+            data: {
+                labels: processLabels(werLabels),
+                datasets: [{
+                    label: 'Word Error Rate (%) on LibriSpeech',
+                    data: [4.2, 2.7, 2.5, 2.9],
+                    backgroundColor: [brilliantBlues.burntOrange, brilliantBlues.red, brilliantBlues.orange, brilliantBlues.teal]
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, title: { display: true, text: 'Word Error Rate (%) - Lower is Better', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor, font: { size: 14 } }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { title: tooltipTitleCallback } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
