@@ -1,0 +1,25 @@
+# Python cache & artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual Environment (per US1.1)
+.venv/
+venv/
+
+# Local Mock Data (per US1.1)
+local_test_data/
+
+# Cloud-synced Data (Must not be committed)
+# These will be on G-Drive, not in the repo.
+raw_data/
+processed_data/
+checkpoints/
+
+# OS / IDE specific
+.DS_Store
+.vscode/
+.idea/
+
+# Local logs
+*.log
