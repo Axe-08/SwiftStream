@@ -1,0 +1,18 @@
+# Core ML
+torch
+transformers
+huggingface_hub
+
+# ASR Toolkit
+espnet
+# Note: You may need a specific version or branch for Mamba support
+
+# Experiment Tracking
+wandb
+
+# Server
+fastapi
+uvicorn[standard]
+python-socketio
+
+jiwer
