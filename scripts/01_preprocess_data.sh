@@ -1,8 +1,5 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v2 - The Correct Pythonic Way)
-
-# This script runs the modern, Python-based ESPnet data preparer.
-# It does not need the egs2/ recipes.
+# scripts/01_preprocess_data.sh (v2.1 - Fix espnet_preparer path)
 
 set -e # Exit immediately if a command fails
 
@@ -35,7 +32,7 @@ if [ "$SUBSET" = "debug" ]; then
     echo "Running in DEBUG mode on dev-clean only."
     # This will find dev-clean.tar.gz in INPUT_DIR and create
     # OUTPUT_DIR/dev-clean/wav.scp, text, etc.
-    espnet_preparer \
+    python -m espnet_preparer \
         --dataset librispeech \
         --datadir "$INPUT_DIR" \
         --outdir "$OUTPUT_DIR" \
@@ -44,7 +41,7 @@ if [ "$SUBSET" = "debug" ]; then
 elif [ "$SUBSET" = "full-960" ]; then
     echo "Running in FULL-960 mode."
     # This will find all the .tar.gz files and process them.
-    espnet_preparer \
+    python -m espnet_preparer \
         --dataset librispeech \
         --datadir "$INPUT_DIR" \
         --outdir "$OUTPUT_DIR" \

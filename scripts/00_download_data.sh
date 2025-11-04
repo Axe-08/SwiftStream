@@ -1,4 +1,5 @@
 #!/bin/bash
+# scripts/00_download_data.sh
 
 # This script downloads LibriSpeech subsets to a target directory.
 # It supports downloading a 'debug' subset or the 'full' dataset.
@@ -6,11 +7,11 @@
 set -e # Exit immediately if a command fails
 
 # --- Configuration ---
-# These URLs are for the main LibriSpeech datasets
 URL_DEV_CLEAN="https://www.openslr.org/resources/12/dev-clean.tar.gz"
 URL_TEST_CLEAN="https://www.openslr.org/resources/12/test-clean.tar.gz"
 URL_TRAIN_100="https://www.openslr.org/resources/12/train-clean-100.tar.gz"
-# Add other URLs (train-360, train-500, etc.) here if needed.
+URL_TRAIN_360="https://www.openslr.org/resources/12/train-clean-360.tar.gz"
+URL_TRAIN_500="https://www.openslr.org/resources/12/train-other-500.tar.gz"
 
 # --- Argument Parsing ---
 SUBSET="debug" # Default to debug
@@ -27,12 +28,12 @@ done
 
 if [ -z "$OUTPUT_DIR" ]; then
     echo "Error: --output_dir is required."
-    echo "Usage: $0 --subset [debug|full] --output_dir /path/to/gdrive/raw"
+    echo "Usage: $0 --subset [debug|full|full-960] --output_dir /path/to/gdrive/raw"
     exit 1
 fi
 
-# Create the output directory if it doesn't exist
-# We assume /path/to/gdrive is mounted or accessible.
+# We will be running this inside the container, which has rclone.
+# We assume the OUTPUT_DIR is a path to a mounted G-Drive.
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
 
@@ -47,26 +48,21 @@ if [ "$SUBSET" = "debug" ]; then
     else
         echo "dev-clean.tar.gz already exists, skipping."
     fi
-    echo "Debug dataset download complete."
 
-elif [ "$SUBSET" = "full" ]; then
-    echo "Downloading full LibriSpeech dataset..."
-    
-    echo "Downloading dev-clean..."
-    [ ! -f "dev-clean.tar.gz" ] && wget "$URL_DEV_CLEAN"
-    
-    echo "Downloading test-clean..."
-    [ ! -f "test-clean.tar.gz" ] && wget "$URL_TEST_CLEAN"
-    
-    echo "Downloading train-clean-100..."
-    [ ! -f "train-clean-100.tar.gz" ] && wget "$URL_TRAIN_100"
-    
-    # Add other 'wget' commands for train-360 etc. here
-    
-    echo "Full dataset download complete."
+elif [ "$SUBSET" = "full-960" ]; then
+    echo "Downloading full LibriSpeech 960h dataset..."
+    for url in $URL_DEV_CLEAN $URL_TEST_CLEAN $URL_TRAIN_100 $URL_TRAIN_360 $URL_TRAIN_500; do
+        filename=$(basename "$url")
+        if [ ! -f "$filename" ]; then
+            echo "Downloading $filename..."
+            wget "$url"
+        else
+            echo "$filename already exists, skipping."
+        fi
+    done
 else
-    echo "Error: Unknown subset '$SUBSET'. Use 'debug' or 'full'."
+    echo "Error: Unknown subset '$SUBSET'. Use 'debug' or 'full-960'."
     exit 1
 fi
 
-echo "-------------------------"
+echo "--- Download complete. ---"
