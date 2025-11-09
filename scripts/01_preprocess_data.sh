@@ -1,8 +1,5 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v4 - The Correct Way)
-
-# This script runs the ESPnet data processing (Stages 1 & 2)
-# by letting the asr.sh recipe handle its own downloads.
+# scripts/01_preprocess_data.sh (v6 - Fix train/valid split for debug)
 
 set -e
 
@@ -29,16 +26,18 @@ cd "$ESPnet_RECIPE_DIR"
 
 # Set the datasets to process based on the subset
 if [ "$SUBSET" = "debug" ]; then
-    echo "Running in DEBUG mode on dev-clean only."
-    train_set="dev_clean" # Use dev-set as dummy train set
-    dev_set="dev_clean"
-    test_sets="dev_clean"
+    echo "Running in DEBUG mode."
+    # FIX: Use dev-clean as a dummy train_set and test-clean as a
+    # dummy valid_set to satisfy the script's requirement.
+    train_set="dev_clean"
+    valid_set="test_clean"
+    test_sets="dev_clean test_clean" # Process both
 
 elif [ "$SUBSET" = "full-960" ]; then
     echo "Running in FULL-960 mode."
     train_set="train_960"
-    dev_set="dev_clean"
-    test_sets="test_clean test_other dev_other"
+    valid_set="dev_clean"
+    test_sets="test_clean test_other dev_clean dev_other"
 fi
 
 # Run ESPnet asr.sh
@@ -51,7 +50,7 @@ fi
     --ngpu 0 \
     --nj 32 \
     --train_set "$train_set" \
-    --valid_set "$dev_set" \
+    --valid_set "$valid_set" \
     --test_sets "$test_sets"
 
 echo "---------------------------------"
