@@ -1,5 +1,11 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v11 - Fix argument quoting)
+# scripts/01_preprocess_data.sh (v12 - THE REAL FIX)
+#
+# BUG 1 FIX: Changed --stage 2 and --stop_stage 2 to --stage 1 and --stop_stage 1.
+#            We need to run Data Prep (Stage 1), not Speed Perturbation (Stage 2).
+#
+# BUG 2 FIX: Ensured --local_data_opts has its value as a *single quoted string*.
+#            The log showed the quotes were missing in the executed version.
 
 set -e
 
@@ -7,8 +13,8 @@ ESPnet_RECIPE_DIR="/opt/espnet/egs2/librispeech/asr1"
 
 # --- Argument Parsing ---
 SUBSET="debug"
-INPUT_DIR=""   # This is the /raw dir where .tar.gz files are
-OUTPUT_DIR=""  # This is the /processed dir where Kaldi files will go
+INPUT_DIR=""   # This is the /raw dir where LibriSpeech/ is
+OUTPUT_DIR="" # This is the /processed dir (used by asr.sh)
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -25,7 +31,7 @@ if [ -z "$INPUT_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
     exit 1
 fi
 
-echo "--- Starting ESPnet Data Prep (Stage 2 ONLY) ---"
+echo "--- Starting ESPnet Data Prep (Stage 1) ---"
 echo "Using Recipe: $ESPnet_RECIPE_DIR"
 echo "Raw Data (Input): $INPUT_DIR"
 echo "Processed Data (Output): $OUTPUT_DIR"
@@ -42,13 +48,12 @@ elif [ "$SUBSET" = "full-960" ]; then
     test_sets="test_clean test_other dev_clean dev_other"
 fi
 
-# --- THIS IS THE FIX ---
-# We run ONLY Stage 2 (Data Prep).
-# We pass --local_data_opts with a single, QUOTED string
-# to tell the sub-script where our pre-downloaded data is.
+# --- THE FIX (Stage 1 and Quoting) ---
+# We run ONLY Stage 1 (Data Prep).
+# We pass --local_data_opts with a single, QUOTED string.
 ./asr.sh \
-    --stage 2 \
-    --stop_stage 2 \
+    --stage 1 \
+    --stop_stage 1 \
     --ngpu 0 \
     --nj 32 \
     --train_set "$train_set" \
@@ -59,6 +64,6 @@ fi
 
 echo "---------------------------------"
 echo "Data processing complete."
-# The script will create subdirs inside $OUTPUT_DIR, e.g., $OUTPUT_DIR/dev_clean
-echo "Processed data is in: $OUTPUT_DIR"
+# Stage 1 will create data in: $ESPnet_RECIPE_DIR/data/
+echo "Processed data is in: $ESPnet_RECIPE_DIR/data/"
 echo "---------------------------------"
