@@ -1,7 +1,12 @@
 #!/bin/bash
-# scripts/00_download_data.sh (v3 - Un-tar Fix)
-# This version now downloads AND un-tars the data into the
-# directory structure that ESPnet Stage 2 expects.
+# scripts/00_download_data.sh (v4 - Extraction Path Fix)
+#
+# BUG FIX: The .tar.gz files from OpenSLR already contain
+# the 'LibriSpeech/' directory. We were creating an extra
+# 'LibriSpeech/' directory and extracting into it,
+# creating /tmp/data/raw/LibriSpeech/LibriSpeech/...
+#
+# This version extracts directly in the OUTPUT_DIR.
 
 set -e
 
@@ -42,14 +47,13 @@ if [ "$SUBSET" = "debug" ]; then
     [ ! -f "test-clean.tar.gz" ] && wget -q --show-progress "$URL_TEST_CLEAN"
     
     echo "--- Extraction ---"
-    # ESPnet's local/data.sh expects this specific sub-directory:
-    mkdir -p LibriSpeech
+    # THE FIX: Extract directly here. The tarballs contain 'LibriSpeech/...'
     
     echo "Extracting dev-clean..."
-    tar -xzf dev-clean.tar.gz -C LibriSpeech
+    tar -xzf dev-clean.tar.gz
     
     echo "Extracting test-clean..."
-    tar -xzf test-clean.tar.gz -C LibriSpeech
+    tar -xzf test-clean.tar.gz
     
     echo "Cleaning up tarballs..."
     rm dev-clean.tar.gz test-clean.tar.gz
