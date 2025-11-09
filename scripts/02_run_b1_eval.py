@@ -2,6 +2,7 @@ import argparse
 import torch
 import torchaudio
 import jiwer
+import wandb  # <-- Added W&B
 from pathlib import Path
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 from utils.text_normalizer import TextNormalizer
@@ -11,7 +12,7 @@ def load_data(data_dir: Path) -> (dict, dict):
     """Loads the mock data from wav.scp and text files."""
     data_dir = Path(data_dir)
     
-    # 1. Load wav.scp (e.g., "sample_001 /path/to/sample.flac")
+    # 1. Load wav.scp
     wav_scp_path = data_dir / "wav.scp"
     audio_paths = {}
     with open(wav_scp_path, "r") as f:
@@ -21,7 +22,7 @@ def load_data(data_dir: Path) -> (dict, dict):
             utt_id, path = line.strip().split(maxsplit=1)
             audio_paths[utt_id] = path
             
-    # 2. Load text (e.g., "sample_001 THIS IS A TEST")
+    # 2. Load text
     text_path = data_dir / "text"
     references = {}
     with open(text_path, "r") as f:
@@ -56,14 +57,32 @@ def load_audio(file_path: str):
 def main(args):
     print(f"--- Starting Baseline 1 (Batch Whisper) Evaluation ---")
     
-    # --- 1. Load Data ---
+    # --- 1. Init W&B ---
+    if not args.no_wandb:
+        try:
+            wandb.init(
+                project="swiftstream-asr",
+                job_type="eval-b1",
+                config=args
+            )
+            print("W&B Initialized.")
+        except Exception as e:
+            print(f"Error initializing W&B: {e}. Running without W&B.")
+            args.no_wandb = True
+    
+    # --- 2. Load Data ---
     print(f"Loading data from: {args.data_dir}")
-    audio_paths, references = load_data(args.data_dir)
+    data_dir_path = Path(args.data_dir)
+    if not data_dir_path.exists():
+        print(f"Error: Data directory not found at {args.data_dir}")
+        return
+
+    audio_paths, references = load_data(data_dir_path)
     if not audio_paths:
         print("No data found. Exiting.")
         return
 
-    # --- 2. Load Model & Processor ---
+    # --- 3. Load Model & Processor ---
     model_id = "distil-whisper/distil-large-v2"
     print(f"Loading model: {model_id} (this may take a moment...)")
     
@@ -73,15 +92,15 @@ def main(args):
         processor = AutoProcessor.from_pretrained(model_id)
     except Exception as e:
         print(f"Error loading model: {e}")
-        print("Please ensure you have an internet connection and 'transformers' is installed.")
         return
 
-    # --- 3. Run Inference ---
+    # --- 4. Run Inference ---
     print(f"Running inference on device: {device}")
     normalizer = TextNormalizer()
     
     hypotheses_list = []
     references_list = []
+    wandb_log_table = [] # For W&B table
 
     # Use tqdm for a progress bar
     for utt_id in tqdm(audio_paths.keys(), desc="Processing files"):
@@ -112,23 +131,50 @@ def main(args):
         )[0]
         
         # Normalize and store
-        hypotheses_list.append(normalizer(transcription))
-        references_list.append(normalizer(references[utt_id]))
+        norm_hyp = normalizer(transcription)
+        norm_ref = normalizer(references[utt_id])
+        
+        hypotheses_list.append(norm_hyp)
+        references_list.append(norm_ref)
 
-    # --- 4. Calculate WER ---
+        # Log examples for W&B
+        if not args.no_wandb and len(wandb_log_table) < 50:
+            sample_wer = jiwer.wer(norm_ref, norm_hyp)
+            wandb_log_table.append([utt_id, norm_ref, norm_hyp, sample_wer])
+
+    # --- 5. Calculate WER ---
     print("\n--- Evaluation Complete ---")
     
     if not references_list:
         print("No valid pairs to compare.")
         return
         
-    print(f"Reference:  '{references_list[0]}'")
-    print(f"Hypothesis: '{hypotheses_list[0]}'")
+    print(f"Reference[0]:  '{references_list[0]}'")
+    print(f"Hypothesis[0]: '{hypotheses_list[0]}'")
     
     wer = jiwer.wer(references_list, hypotheses_list)
     
     print(f"\nFinal Word Error Rate (WER): {wer * 100:.2f}%")
     print("---------------------------------")
+
+    # --- 6. Log to W&B and Finish ---
+    if not args.no_wandb:
+        print("Logging results to W&B...")
+        try:
+            # Log summary metric
+            wandb.log({"b1_batch_wer": wer})
+            
+            # Log example table
+            table = wandb.Table(
+                columns=["utt_id", "Reference", "Hypothesis", "WER"],
+                data=wandb_log_table
+            )
+            wandb.log({"b1_evaluation_examples": table})
+            
+            wandb.finish()
+            print("W&B logging complete.")
+        except Exception as e:
+            print(f"Error logging to W&B: {e}")
 
 
 if __name__ == "__main__":
@@ -136,15 +182,13 @@ if __name__ == "__main__":
         description="Run Baseline 1 (Batch Whisper) ASR Evaluation."
     )
     
-    # Argument for data directory (Task 3.3)
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="./local_test_data",
-        help="Path to the data directory containing wav.scp and text files."
+        required=True,
+        help="Path to the processed data directory (e.g., .../test_clean)."
     )
     
-    # Argument for device (Task 3.3)
     parser.add_argument(
         "--device",
         type=str,
@@ -152,5 +196,16 @@ if __name__ == "__main__":
         help="Device to run inference on (e.g., 'cpu', 'cuda', 'cuda:0')."
     )
     
+    parser.add_argument(
+        "--no_wandb",
+        action="store_true",
+        help="Disable Weights & Biases logging."
+    )
+    
     args = parser.parse_args()
+    
+    # Update --data_dir in args to be model_id for W&B config
+    if not args.no_wandb:
+        args.model_id = "distil-whisper/distil-large-v2"
+        
     main(args)
