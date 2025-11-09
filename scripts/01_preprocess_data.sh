@@ -1,62 +1,63 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v9 - Create downloads dir)
+# scripts/01_preprocess_data.sh (v10 - Skip Download Stage)
 
 set -e
 
-# This path is guaranteed to exist from our Dockerfile
 ESPnet_RECIPE_DIR="/opt/espnet/egs2/librispeech/asr1"
 
 # --- Argument Parsing ---
 SUBSET="debug"
+INPUT_DIR=""   # This is the /raw dir where .tar.gz files are
+OUTPUT_DIR=""  # This is the /processed dir where Kaldi files will go
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --subset) SUBSET="$2"; shift ;;
+        --input_dir) INPUT_DIR="$2"; shift ;;
+        --output_dir) OUTPUT_DIR="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
 
-echo "--- Starting ESPnet Data Prep (asr.sh) ---"
+if [ -z "$INPUT_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
+    echo "Error: --input_dir and --output_dir are required."
+    exit 1
+fi
+
+echo "--- Starting ESPnet Data Prep (Stage 2 ONLY) ---"
 echo "Using Recipe: $ESPnet_RECIPE_DIR"
-echo "Mode: $SUBSET"
+echo "Raw Data (Input): $INPUT_DIR"
+echo "Processed Data (Output): $OUTPUT_DIR"
 
-# --- NEW FIX ---
-# The script expects a 'downloads' directory to exist.
-echo "Creating downloads directory..."
-mkdir -p "$ESPnet_RECIPE_DIR/downloads"
-# --- END NEW FIX ---
-
-# Go to the recipe directory
 cd "$ESPnet_RECIPE_DIR"
 
-# Set the datasets to process based on the subset
 if [ "$SUBSET" = "debug" ]; then
-    echo "Running in DEBUG mode."
     train_set="dev_clean"
     valid_set="test_clean"
     test_sets="test_clean"
-
 elif [ "$SUBSET" = "full-960" ]; then
-    echo "Running in FULL-960 mode."
     train_set="train_960"
     valid_set="dev_clean"
     test_sets="test_clean test_other dev_clean dev_other"
 fi
 
-# Run ESPnet asr.sh
-# --stage 1: Data Download
-# --stop_stage 2: Data preparation
+# --- THIS IS THE FIX ---
+# We run ONLY Stage 2 (Data Prep).
+# We pass --local_data_opts to tell the sub-script
+# where our pre-downloaded data is.
 ./asr.sh \
-    --stage 1 \
+    --stage 2 \
     --stop_stage 2 \
     --ngpu 0 \
     --nj 32 \
     --train_set "$train_set" \
     --valid_set "$valid_set" \
-    --test_sets "$test_sets"
+    --test_sets "$test_sets" \
+    --dumpdir "$OUTPUT_DIR" \
+    --local_data_opts "--datadir $INPUT_DIR"
 
 echo "---------------------------------"
 echo "Data processing complete."
-echo "Processed data is in: $ESPnet_RECIPE_DIR/dump/raw/"
+echo "Processed data is in: $OUTPUT_DIR"
 echo "---------------------------------"
