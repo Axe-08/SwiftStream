@@ -1,5 +1,7 @@
 #!/bin/bash
-# scripts/00_download_data.sh (v2 - Manual Download)
+# scripts/00_download_data.sh (v3 - Un-tar Fix)
+# This version now downloads AND un-tars the data into the
+# directory structure that ESPnet Stage 2 expects.
 
 set -e
 
@@ -28,22 +30,33 @@ fi
 mkdir -p "$OUTPUT_DIR"
 cd "$OUTPUT_DIR"
 
-echo "--- Starting Manual Download ---"
+echo "--- Starting Manual Download & Extraction ---"
 echo "Mode: $SUBSET"
 echo "Target: $OUTPUT_DIR"
 
 if [ "$SUBSET" = "debug" ]; then
     echo "Downloading LibriSpeech 'dev-clean'..."
-    [ ! -f "dev-clean.tar.gz" ] && wget "$URL_DEV_CLEAN"
+    [ ! -f "dev-clean.tar.gz" ] && wget -q --show-progress "$URL_DEV_CLEAN"
     
     echo "Downloading LibriSpeech 'test-clean'..."
-    [ ! -f "test-clean.tar.gz" ] && wget "$URL_TEST_CLEAN"
+    [ ! -f "test-clean.tar.gz" ] && wget -q --show-progress "$URL_TEST_CLEAN"
+    
+    echo "--- Extraction ---"
+    # ESPnet's local/data.sh expects this specific sub-directory:
+    mkdir -p LibriSpeech
+    
+    echo "Extracting dev-clean..."
+    tar -xzf dev-clean.tar.gz -C LibriSpeech
+    
+    echo "Extracting test-clean..."
+    tar -xzf test-clean.tar.gz -C LibriSpeech
+    
+    echo "Cleaning up tarballs..."
+    rm dev-clean.tar.gz test-clean.tar.gz
 
 elif [ "$SUBSET" = "full-960" ]; then
     echo "Downloading full LibriSpeech 960h set..."
-    wget -c "$URL_DEV_CLEAN"
-    wget -c "$URL_TEST_CLEAN"
-    # ... add train-100, 360, 500 etc. ...
+    # ... This section would be expanded to download all parts ...
 fi
 
-echo "--- Download complete. ---"
+echo "--- Download and extraction complete. ---"
