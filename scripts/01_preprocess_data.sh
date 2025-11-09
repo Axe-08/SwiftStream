@@ -1,8 +1,5 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v7 - Final debug logic)
-
-# This script runs the ESPnet data processing (Stages 1 & 2)
-# by calling the asr.sh recipe, which we cloned into /opt/espnet.
+# scripts/01_preprocess_data.sh (v8 - Final logic)
 
 set -e
 
@@ -30,11 +27,11 @@ cd "$ESPnet_RECIPE_DIR"
 # Set the datasets to process based on the subset
 if [ "$SUBSET" = "debug" ]; then
     echo "Running in DEBUG mode."
-    # FIX: Use dev_clean as train, test_clean as valid,
-    # and an empty test_sets to satisfy script's safety checks.
+    # FIX: Use dev_clean as train, and test_clean as
+    # both valid and test to satisfy all script safety checks.
     train_set="dev_clean"
     valid_set="test_clean"
-    test_sets="" # We don't need to process a test set for this debug run
+    test_sets="test_clean"
 
 elif [ "$SUBSET" = "full-960" ]; then
     echo "Running in FULL-960 mode."
@@ -44,9 +41,8 @@ elif [ "$SUBSET" = "full-960" ]; then
 fi
 
 # Run ESPnet asr.sh
-# --stage 1: Data Download (downloads to its *own* 'downloads/' dir)
-# --stop_stage 2: Data preparation (creates wav.scp, text, etc.)
-# The output will be in 'dump/raw/'
+# --stage 1: Data Download
+# --stop_stage 2: Data preparation
 ./asr.sh \
     --stage 1 \
     --stop_stage 2 \
