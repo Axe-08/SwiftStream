@@ -1,7 +1,19 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v2.1 - Fix espnet_preparer path)
+# scripts/01_preprocess_data.sh (v3 - Correct Path)
 
-set -e # Exit immediately if a command fails
+# This script runs the ESPnet data processing (Stages 1 & 2)
+# by calling the asr.sh recipe, which we cloned into /opt/espnet.
+
+set -e
+
+# --- Configuration ---
+# This path is now GUARANTEED to exist because of our new Dockerfile
+ESPnet_RECIPE_DIR="/opt/espnet/egs2/librispeech/asr1"
+
+if [ ! -d "$ESPnet_RECIPE_DIR" ]; then
+    echo "CRITICAL Error: ESPnet recipe not found at $ESPnet_RECIPE_DIR"
+    exit 1
+fi
 
 # --- Argument Parsing ---
 SUBSET="debug"
@@ -24,32 +36,44 @@ if [ -z "$INPUT_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
     exit 1
 fi
 
-echo "--- Starting ESPnet Data Prep (Pythonic Way) ---"
+echo "--- Starting ESPnet Data Prep (asr.sh) ---"
+echo "Using Recipe: $ESPnet_RECIPE_DIR"
 echo "Raw Data (Input): $INPUT_DIR"
 echo "Processed Data (Output): $OUTPUT_DIR"
 
+# Go to the recipe directory
+cd "$ESPnet_RECIPE_DIR"
+
+# Set the datasets to process based on the subset
 if [ "$SUBSET" = "debug" ]; then
     echo "Running in DEBUG mode on dev-clean only."
-    # This will find dev-clean.tar.gz in INPUT_DIR and create
-    # OUTPUT_DIR/dev-clean/wav.scp, text, etc.
-    python -m espnet_preparer \
-        --dataset librispeech \
-        --datadir "$INPUT_DIR" \
-        --outdir "$OUTPUT_DIR" \
-        --subset dev-clean
+    # We use dev_clean as a dummy training set for a fast run
+    train_set="dev_clean"
+    dev_set="dev_clean"
+    test_sets="dev_clean"
 
 elif [ "$SUBSET" = "full-960" ]; then
     echo "Running in FULL-960 mode."
-    # This will find all the .tar.gz files and process them.
-    python -m espnet_preparer \
-        --dataset librispeech \
-        --datadir "$INPUT_DIR" \
-        --outdir "$OUTPUT_DIR" \
-        --subset train-clean-100 train-clean-360 train-other-500 test-clean dev-clean
-else
-    echo "Error: Unknown subset '$SUBSET'. Use 'debug' or 'full-960'."
-    exit 1
+    train_set="train_960"
+    dev_set="dev_clean"
+    test_sets="test_clean test_other dev_other"
 fi
+
+# Run ESPnet asr.sh
+# --stage 1: Data Download (in this case, just unpacks)
+# --stop_stage 2: Data preparation (creates wav.scp, text, etc.)
+# --librispeech_datadir: Where our script will look for the .tar.gz files
+# --dumpdir: Where ESPnet will write the processed files
+./asr.sh \
+    --stage 1 \
+    --stop_stage 2 \
+    --ngpu 0 \
+    --nj 32 \
+    --train_set "$train_set" \
+    --valid_set "$dev_set" \
+    --test_sets "$test_sets" \
+    --librispeech_datadir "$INPUT_DIR" \
+    --dumpdir "$OUTPUT_DIR"
 
 echo "---------------------------------"
 echo "Data processing complete."
