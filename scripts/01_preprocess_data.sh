@@ -1,69 +1,59 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v12 - THE REAL FIX)
+# scripts/01_preprocess_data.sh (v13 - The "Manual" Fix)
 #
-# BUG 1 FIX: Changed --stage 2 and --stop_stage 2 to --stage 1 and --stop_stage 1.
-#            We need to run Data Prep (Stage 1), not Speed Perturbation (Stage 2).
-#
-# BUG 2 FIX: Ensured --local_data_opts has its value as a *single quoted string*.
-#            The log showed the quotes were missing in the executed version.
+# This script is now robust. It implements the "symlink"
+# method we discovered during debugging. It no longer calls
+# asr.sh, but instead directly calls local/data.sh
+# after creating the 'downloads' symlink.
 
 set -e
 
 ESPnet_RECIPE_DIR="/opt/espnet/egs2/librispeech/asr1"
 
 # --- Argument Parsing ---
-SUBSET="debug"
-INPUT_DIR=""   # This is the /raw dir where LibriSpeech/ is
-OUTPUT_DIR="" # This is the /processed dir (used by asr.sh)
+# We only need the --input_dir (where /raw is)
+INPUT_DIR=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --subset) SUBSET="$2"; shift ;;
         --input_dir) INPUT_DIR="$2"; shift ;;
-        --output_dir) OUTPUT_DIR="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
 
-if [ -z "$INPUT_DIR" ] || [ -z "$OUTPUT_DIR" ]; then
-    echo "Error: --input_dir and --output_dir are required."
+if [ -z "$INPUT_DIR" ]; then
+    echo "Error: --input_dir is required (e.g., /tmp/data/raw)."
     exit 1
 fi
 
-echo "--- Starting ESPnet Data Prep (Stage 1) ---"
+echo "--- Starting ESPnet Data Prep (Symlink Method) ---"
 echo "Using Recipe: $ESPnet_RECIPE_DIR"
 echo "Raw Data (Input): $INPUT_DIR"
-echo "Processed Data (Output): $OUTPUT_DIR"
 
 cd "$ESPnet_RECIPE_DIR"
 
-if [ "$SUBSET" = "debug" ]; then
-    train_set="dev_clean"
-    valid_set="test_clean"
-    test_sets="test_clean"
-elif [ "$SUBSET" = "full-960" ]; then
-    train_set="train_960"
-    valid_set="dev_clean"
-    test_sets="test_clean test_other dev_clean dev_other"
-fi
+# Clean up old links just in case
+rm -f downloads
+rm -f LibriSpeech
 
-# --- THE FIX (Stage 1 and Quoting) ---
-# We run ONLY Stage 1 (Data Prep).
-# We pass --local_data_opts with a single, QUOTED string.
-./asr.sh \
-    --stage 1 \
-    --stop_stage 1 \
-    --ngpu 0 \
-    --nj 32 \
-    --train_set "$train_set" \
-    --valid_set "$valid_set" \
-    --test_sets "$test_sets" \
-    --dumpdir "$OUTPUT_DIR" \
-    --local_data_opts "--datadir $INPUT_DIR"
+echo "Creating 'downloads' symlink..."
+ln -s "$INPUT_DIR" downloads
+
+echo "Verifying link..."
+ls -l downloads
+ls -l downloads/LibriSpeech
+
+echo "Running data preparation..."
+# This is the command that does all the work.
+# It will find 'flac' (thanks to the Dockerfile fix)
+# and process all data inside the 'downloads/LibriSpeech' dir.
+./local/data.sh
 
 echo "---------------------------------"
 echo "Data processing complete."
-# Stage 1 will create data in: $ESPnet_RECIPE_DIR/data/
 echo "Processed data is in: $ESPnet_RECIPE_DIR/data/"
 echo "---------------------------------"
+
+# Go back to the original directory
+cd -

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     sox \
     libsndfile1 \
     libsndfile1-dev \
+    flac \
     git \
     build-essential \
     cmake \

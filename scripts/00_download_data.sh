@@ -2,11 +2,8 @@
 # scripts/00_download_data.sh (v4 - Extraction Path Fix)
 #
 # BUG FIX: The .tar.gz files from OpenSLR already contain
-# the 'LibriSpeech/' directory. We were creating an extra
-# 'LibriSpeech/' directory and extracting into it,
-# creating /tmp/data/raw/LibriSpeech/LibriSpeech/...
-#
-# This version extracts directly in the OUTPUT_DIR.
+# the 'LibriSpeech/' directory. This version extracts
+# directly in the OUTPUT_DIR.
 
 set -e
 
