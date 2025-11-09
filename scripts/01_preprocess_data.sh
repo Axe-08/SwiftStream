@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v8 - Final logic)
+# scripts/01_preprocess_data.sh (v9 - Create downloads dir)
 
 set -e
 
@@ -21,14 +21,18 @@ echo "--- Starting ESPnet Data Prep (asr.sh) ---"
 echo "Using Recipe: $ESPnet_RECIPE_DIR"
 echo "Mode: $SUBSET"
 
+# --- NEW FIX ---
+# The script expects a 'downloads' directory to exist.
+echo "Creating downloads directory..."
+mkdir -p "$ESPnet_RECIPE_DIR/downloads"
+# --- END NEW FIX ---
+
 # Go to the recipe directory
 cd "$ESPnet_RECIPE_DIR"
 
 # Set the datasets to process based on the subset
 if [ "$SUBSET" = "debug" ]; then
     echo "Running in DEBUG mode."
-    # FIX: Use dev_clean as train, and test_clean as
-    # both valid and test to satisfy all script safety checks.
     train_set="dev_clean"
     valid_set="test_clean"
     test_sets="test_clean"
