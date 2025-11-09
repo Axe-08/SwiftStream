@@ -1,5 +1,5 @@
 #!/bin/bash
-# scripts/01_preprocess_data.sh (v10 - Skip Download Stage)
+# scripts/01_preprocess_data.sh (v11 - Fix argument quoting)
 
 set -e
 
@@ -44,8 +44,8 @@ fi
 
 # --- THIS IS THE FIX ---
 # We run ONLY Stage 2 (Data Prep).
-# We pass --local_data_opts to tell the sub-script
-# where our pre-downloaded data is.
+# We pass --local_data_opts with a single, QUOTED string
+# to tell the sub-script where our pre-downloaded data is.
 ./asr.sh \
     --stage 2 \
     --stop_stage 2 \
@@ -59,5 +59,6 @@ fi
 
 echo "---------------------------------"
 echo "Data processing complete."
+# The script will create subdirs inside $OUTPUT_DIR, e.g., $OUTPUT_DIR/dev_clean
 echo "Processed data is in: $OUTPUT_DIR"
 echo "---------------------------------"
