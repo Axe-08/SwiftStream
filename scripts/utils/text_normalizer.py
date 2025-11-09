@@ -1,39 +1,59 @@
-import re
+#!/bin/bash
+# scripts/01_preprocess_data.sh (v6 - Fix train/valid split for debug)
 
-class TextNormalizer:
-    """
-    Standard text normalizer for ASR evaluation.
-    Matches the "ground truth" format of LibriSpeech.
-    1. Converts all text to uppercase.
-    2. Removes all punctuation.
-    3. Collapses multiple spaces into one.
-    """
-    def __init__(self):
-        # This regex matches any character that is NOT an uppercase letter (A-Z)
-        # or a space. We will replace all matches with an empty string.
-        self.punctuation_regex = re.compile(r"[^A-Z ]")
-        # This regex matches one or more space characters.
-        self.whitespace_regex = re.compile(r"\s+")
+set -e
 
-    def __call__(self, text: str) -> str:
-        # 1. Convert to uppercase
-        text = text.upper()
-        
-        # 2. Remove all punctuation
-        text = self.punctuation_regex.sub("", text)
-        
-        # 3. Collapse all whitespace (spaces, tabs, newlines) into a single space
-        text = self.whitespace_regex.sub(" ", text)
-        
-        # 4. Remove leading/trailing whitespace
-        return text.strip()
+# This path is guaranteed to exist from our Dockerfile
+ESPnet_RECIPE_DIR="/opt/espnet/egs2/librispeech/asr1"
 
-if __name__ == "__main__":
-    # Example of how to use it
-    normalizer = TextNormalizer()
-    test_string = "Hello, world! This is a test... [it's 100%]"
-    normalized = normalizer(test_string)
-    
-    print(f"Original:    '{test_string}'")
-    print(f"Normalized:  '{normalized}'")
-    # Expected Output: 'HELLO WORLD THIS IS A TEST ITS 100'
+# --- Argument Parsing ---
+SUBSET="debug"
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --subset) SUBSET="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+echo "--- Starting ESPnet Data Prep (asr.sh) ---"
+echo "Using Recipe: $ESPnet_RECIPE_DIR"
+echo "Mode: $SUBSET"
+
+# Go to the recipe directory
+cd "$ESPnet_RECIPE_DIR"
+
+# Set the datasets to process based on the subset
+if [ "$SUBSET" = "debug" ]; then
+    echo "Running in DEBUG mode."
+    # FIX: Use dev-clean as a dummy train_set and test-clean as a
+    # dummy valid_set to satisfy the script's requirement.
+    train_set="dev_clean"
+    valid_set="test_clean"
+    test_sets="dev_clean test_clean" # Process both
+
+elif [ "$SUBSET" = "full-960" ]; then
+    echo "Running in FULL-960 mode."
+    train_set="train_960"
+    valid_set="dev_clean"
+    test_sets="test_clean test_other dev_clean dev_other"
+fi
+
+# Run ESPnet asr.sh
+# --stage 1: Data Download (downloads to its *own* 'downloads/' dir)
+# --stop_stage 2: Data preparation (creates wav.scp, text, etc.)
+# The output will be in 'dump/raw/'
+./asr.sh \
+    --stage 1 \
+    --stop_stage 2 \
+    --ngpu 0 \
+    --nj 32 \
+    --train_set "$train_set" \
+    --valid_set "$valid_set" \
+    --test_sets "$test_sets"
+
+echo "---------------------------------"
+echo "Data processing complete."
+echo "Processed data is in: $ESPnet_RECIPE_DIR/dump/raw/"
+echo "---------------------------------"
