@@ -1,6 +1,7 @@
 # Core ML
 torch
 torchaudio
+torchcodec
 transformers
 huggingface_hub
 scikit-learn
