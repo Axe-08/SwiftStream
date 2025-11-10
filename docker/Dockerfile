@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y \
 # (This step is unchanged)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip uninstall -y torchvision
 # --- NEW: Clone ESPnet for Recipes ---
 # This is the step we were missing.
 # We clone the full repo to /opt/espnet to get the egs2/ scripts.
