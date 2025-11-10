@@ -1,5 +1,6 @@
 # Core ML
 torch
+torchaudio
 transformers
 huggingface_hub
 
